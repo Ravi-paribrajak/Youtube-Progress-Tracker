@@ -32,8 +32,10 @@ export const StreakTracker: React.FC<Props> = ({ projects }) => {
     weekEnd.setHours(23, 59, 59, 999);
 
     const uploadsInWeek = projects.filter(p => {
-        if (p.stage !== Stage.PUBLISHED) return false;
-        const pDate = new Date(p.updatedAt); 
+        // Must be in PUBLISHED stage and have a valid publishedAt date
+        if (p.stage !== Stage.PUBLISHED || !p.publishedAt) return false;
+        
+        const pDate = new Date(p.publishedAt); 
         return pDate >= weekStart && pDate <= weekEnd;
     });
 

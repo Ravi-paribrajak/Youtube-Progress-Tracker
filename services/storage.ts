@@ -14,6 +14,7 @@ export const getProjects = (): VideoProject[] => {
           stage: Stage.PUBLISHED,
           dueDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
           updatedAt: new Date().toISOString(),
+          publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // Published 2 days ago
           metadata: {
             description: 'A look into the week.',
             tags: ['vlog', 'productivity'],

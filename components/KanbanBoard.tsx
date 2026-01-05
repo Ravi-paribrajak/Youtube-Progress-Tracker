@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { VideoProject, Stage, STAGE_LABELS } from '../types';
-import { Plus, GripVertical, Calendar } from 'lucide-react';
+import { 
+  Plus, GripVertical, Calendar, 
+  Lightbulb, FileText, Camera, Scissors, Image as ImageIcon, CheckCircle, Globe, Ghost 
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useToast } from '../context/ToastContext';
@@ -12,6 +15,16 @@ interface Props {
   onSelectProject: (project: VideoProject) => void;
   onNewProject: () => void;
 }
+
+const STAGE_ICONS: Record<Stage, React.ElementType> = {
+  [Stage.IDEA]: Lightbulb,
+  [Stage.SCRIPTING]: FileText,
+  [Stage.FILMING]: Camera,
+  [Stage.EDITING]: Scissors,
+  [Stage.THUMBNAIL]: ImageIcon,
+  [Stage.READY]: CheckCircle,
+  [Stage.PUBLISHED]: Globe,
+};
 
 export const KanbanBoard: React.FC<Props> = ({ projects, onProjectsChange, onSelectProject, onNewProject }) => {
   const [enabled, setEnabled] = useState(false);
@@ -47,8 +60,11 @@ export const KanbanBoard: React.FC<Props> = ({ projects, onProjectsChange, onSel
         movedProject.stage = destStage;
         movedProject.updatedAt = new Date().toISOString();
         
-        // Celebration Logic!
+        // Handle publishedAt logic
         if (destStage === Stage.PUBLISHED) {
+            movedProject.publishedAt = new Date().toISOString();
+            
+            // Celebration Logic!
             confetti({
                 particleCount: 150,
                 spread: 70,
@@ -56,6 +72,9 @@ export const KanbanBoard: React.FC<Props> = ({ projects, onProjectsChange, onSel
                 colors: ['#6366f1', '#a855f7', '#ffffff']
             });
             toast(`"${movedProject.title}" is live! Great job!`, 'success');
+        } else if (sourceStage === Stage.PUBLISHED) {
+            // If moved OUT of published, reset the publishedAt date
+            movedProject.publishedAt = undefined;
         }
     }
     
@@ -80,45 +99,55 @@ export const KanbanBoard: React.FC<Props> = ({ projects, onProjectsChange, onSel
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex h-[calc(100vh-180px)] overflow-x-auto gap-6 pb-4 px-2">
-        {Object.values(Stage).map((stage) => (
-          <div key={stage} className="min-w-[320px] flex flex-col">
-            {/* Column Header */}
-            <div className="flex items-center justify-between px-1 mb-4">
-                <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{STAGE_LABELS[stage]}</h3>
-                    <span className="text-[10px] text-zinc-500 font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
-                        {projects.filter(p => p.stage === stage).length}
-                    </span>
+        {Object.values(Stage).map((stage) => {
+          const stageProjects = projects.filter(p => p.stage === stage);
+          const EmptyIcon = STAGE_ICONS[stage] || Ghost;
+          
+          return (
+            <div key={stage} className="min-w-[320px] flex flex-col">
+                {/* Column Header */}
+                <div className="flex items-center justify-between px-1 mb-4">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{STAGE_LABELS[stage]}</h3>
+                        <span className="text-[10px] text-zinc-500 font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
+                            {stageProjects.length}
+                        </span>
+                    </div>
+                    {stage === Stage.IDEA && (
+                        <button onClick={onNewProject} className="p-1.5 hover:bg-white/10 rounded-md text-zinc-500 hover:text-white transition-colors">
+                            <Plus size={14} />
+                        </button>
+                    )}
                 </div>
-                {stage === Stage.IDEA && (
-                    <button onClick={onNewProject} className="p-1.5 hover:bg-white/10 rounded-md text-zinc-500 hover:text-white transition-colors">
-                        <Plus size={14} />
-                    </button>
-                )}
-            </div>
 
-            {/* Droppable Area */}
-            <Droppable droppableId={stage}>
-              {(provided, snapshot) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className={`relative flex-1 rounded-2xl p-2 space-y-3 overflow-y-auto transition-all duration-300 ${
-                    snapshot.isDraggingOver ? 'bg-white/[0.02]' : 'bg-transparent'
-                  }`}
-                >
-                  {/* Subtle Column Glow on Drag Over */}
-                  {snapshot.isDraggingOver && (
-                      <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent rounded-2xl pointer-events-none" />
-                  )}
+                {/* Droppable Area */}
+                <Droppable droppableId={stage}>
+                {(provided, snapshot) => (
+                    <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className={`relative flex-1 rounded-2xl p-2 space-y-3 overflow-y-auto transition-all duration-300 min-h-[150px] ${
+                        snapshot.isDraggingOver ? 'bg-white/[0.02]' : 'bg-transparent'
+                    }`}
+                    >
+                    {/* Subtle Column Glow on Drag Over */}
+                    {snapshot.isDraggingOver && (
+                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent rounded-2xl pointer-events-none" />
+                    )}
 
-                  {projects
-                    .filter(p => p.stage === stage)
-                    .map((project, index) => {
+                    {/* Empty State */}
+                    {stageProjects.length === 0 && !snapshot.isDraggingOver && (
+                        <div className="flex flex-col items-center justify-center h-full min-h-[140px] border-2 border-dashed border-white/5 rounded-xl gap-3 text-zinc-700 select-none">
+                            <EmptyIcon size={24} className="opacity-40" />
+                            <span className="text-xs font-medium opacity-60">No videos in {STAGE_LABELS[stage].toLowerCase()}</span>
+                        </div>
+                    )}
+
+                    {stageProjects.map((project, index) => {
                         const progress = Math.round((project.checklist.filter(i => i.completed).length / project.checklist.length) * 100);
                         return (
                             <Draggable key={project.id} draggableId={project.id} index={index}>
-                              {(provided, snapshot) => (
+                                {(provided, snapshot) => (
                                 <div
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
@@ -168,16 +197,17 @@ export const KanbanBoard: React.FC<Props> = ({ projects, onProjectsChange, onSel
                                         </div>
                                     </motion.div>
                                 </div>
-                              )}
+                                )}
                             </Draggable>
                         );
                     })}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </div>
-        ))}
+                    {provided.placeholder}
+                    </div>
+                )}
+                </Droppable>
+            </div>
+          );
+        })}
       </div>
     </DragDropContext>
   );

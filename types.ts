@@ -27,6 +27,7 @@ export interface VideoProject {
   stage: Stage;
   dueDate: string; // ISO Date string
   updatedAt: string;
+  publishedAt?: string; // ISO Date string, only present when PUBLISHED
   metadata: VideoMetadata;
   checklist: ChecklistItem[];
 }
