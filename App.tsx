@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, Calendar as CalendarIcon, Plus, Video } from 'lucide-react';
+import { LayoutDashboard, Calendar as CalendarIcon, Plus, Box, Layers } from 'lucide-react';
 import { KanbanBoard } from './components/KanbanBoard';
-import { StreakTracker } from './components/StreakTracker';
+import { StatsHero } from './components/StatsHero';
 import { VideoDetail } from './components/VideoDetail';
-import { VideoProject, Stage } from './types';
+import { VideoProject } from './types';
 import { getProjects, saveProjects, createProject } from './services/storage';
+import { motion } from 'framer-motion';
 
 const App = () => {
   const [projects, setProjects] = useState<VideoProject[]>([]);
@@ -40,94 +41,84 @@ const App = () => {
       setSelectedProject(null);
   };
 
-  const handleProjectsChange = (newProjects: VideoProject[]) => {
-      setProjects(newProjects);
-  };
-
   return (
-    <div className="flex h-screen overflow-hidden text-zinc-100">
+    <div className="min-h-screen text-zinc-100 flex flex-col relative overflow-hidden">
       
-      {/* Sidebar */}
-      <aside className="w-16 lg:w-64 flex flex-col glass border-r-0 z-20">
-        <div className="h-16 flex items-center justify-center lg:justify-start lg:px-6 border-b border-white/5">
-            <div className="bg-indigo-500/10 p-2 rounded-lg border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                <Video className="text-indigo-400 w-5 h-5" />
-            </div>
-            <span className="hidden lg:block ml-3 font-bold tracking-tight text-white/90">CreatorFlow</span>
+      {/* Top Header */}
+      <header className="flex-none h-20 px-6 md:px-12 flex items-center justify-between z-10 max-w-7xl mx-auto w-full">
+        <div className="flex items-center gap-3">
+             <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                <Box size={16} className="text-white" />
+             </div>
+             <span className="font-bold tracking-tight text-lg">CreatorFlow</span>
         </div>
+        <button 
+            onClick={handleCreateProject}
+            className="group flex items-center gap-2 px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-full text-sm font-semibold transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
+        >
+            <Plus size={16} className="transition-transform group-hover:rotate-90" />
+            <span>New Video</span>
+        </button>
+      </header>
 
-        <nav className="flex-1 p-4 space-y-2">
-            <button 
-                onClick={() => setView('board')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${view === 'board' ? 'bg-white/5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] border border-white/5' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
-            >
-                <LayoutDashboard size={18} />
-                <span className="hidden lg:block">Dashboard</span>
-            </button>
-            <button 
-                onClick={() => setView('calendar')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${view === 'calendar' ? 'bg-white/5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] border border-white/5' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
-            >
-                <CalendarIcon size={18} />
-                <span className="hidden lg:block">Calendar</span>
-            </button>
-        </nav>
+      {/* Main Content Area */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 md:px-12 pb-32 flex flex-col min-h-0">
+         
+         <StatsHero projects={projects} />
 
-        <div className="p-4 border-t border-white/5">
-             <button 
-                onClick={handleCreateProject}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-br from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white py-2.5 rounded-lg transition-all font-medium shadow-[0_0_20px_-5px_rgba(99,102,241,0.5)] border border-white/10 active:scale-95"
-            >
-                <Plus size={18} />
-                <span className="hidden lg:block">New Video</span>
-             </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-16 flex items-center justify-between px-8 bg-transparent z-10">
-            <h2 className="text-sm font-medium text-zinc-400 tracking-wide uppercase">
-                {view === 'board' ? 'Production Pipeline' : 'Content Calendar'}
-            </h2>
-            <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-purple-500/20 ring-2 ring-white/10">
-                    ME
-                </div>
-            </div>
-        </header>
-
-        <div className="flex-1 overflow-x-auto p-8 pt-2">
-            <StreakTracker projects={projects} />
-            
-            {view === 'board' ? (
-                <KanbanBoard 
+         {/* View Switching Logic */}
+         {view === 'board' ? (
+             <div className="flex-1 min-h-0">
+                 <KanbanBoard 
                     projects={projects} 
-                    onProjectsChange={handleProjectsChange}
+                    onProjectsChange={setProjects}
                     onSelectProject={setSelectedProject}
                     onNewProject={handleCreateProject}
                 />
-            ) : (
-                 <div className="flex items-center justify-center h-64 border border-dashed border-white/10 bg-white/5 rounded-xl text-zinc-500 backdrop-blur-sm">
-                    <div className="text-center">
-                        <CalendarIcon className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                        <p>Calendar View Coming Soon</p>
-                        <p className="text-xs mt-1">Focus on the Kanban for now.</p>
-                    </div>
-                </div>
-            )}
-        </div>
-
-        {/* Modal Overlay */}
-        {selectedProject && (
-            <VideoDetail 
-                project={selectedProject} 
-                onClose={() => setSelectedProject(null)}
-                onUpdate={handleUpdateProject}
-                onDelete={handleDeleteProject}
-            />
-        )}
+             </div>
+         ) : (
+             <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-3xl bg-white/[0.02]">
+                <CalendarIcon className="w-16 h-16 text-zinc-800 mb-4" />
+                <h2 className="text-xl font-medium text-zinc-500">Calendar View</h2>
+                <p className="text-zinc-600 text-sm mt-1">Coming soon in v2.0</p>
+             </div>
+         )}
       </main>
+
+      {/* Floating Dock (MacOS Style) */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
+        <div className="glass-dock flex items-center gap-2 p-2 rounded-2xl">
+            <button 
+                onClick={() => setView('board')}
+                className={`p-3 rounded-xl transition-all duration-200 relative group ${view === 'board' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
+            >
+                <Layers size={20} />
+                {view === 'board' && <motion.div layoutId="dock-dot" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full" />}
+                <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-xs px-2 py-1 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Pipeline</span>
+            </button>
+            
+            <div className="w-[1px] h-6 bg-white/10 mx-1" />
+            
+            <button 
+                onClick={() => setView('calendar')}
+                className={`p-3 rounded-xl transition-all duration-200 relative group ${view === 'calendar' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
+            >
+                <CalendarIcon size={20} />
+                {view === 'calendar' && <motion.div layoutId="dock-dot" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full" />}
+                <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-xs px-2 py-1 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Calendar</span>
+            </button>
+        </div>
+      </div>
+
+      {/* Detail Modal */}
+      {selectedProject && (
+        <VideoDetail 
+            project={selectedProject} 
+            onClose={() => setSelectedProject(null)}
+            onUpdate={handleUpdateProject}
+            onDelete={handleDeleteProject}
+        />
+      )}
     </div>
   );
 };
